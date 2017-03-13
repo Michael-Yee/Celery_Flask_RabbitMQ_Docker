@@ -1,0 +1,49 @@
+#version: ‘1’
+rabbitmq:
+  image: rabbitmq:3-management
+  environment:
+    - RABBITMQ_DEFAULT_USER=guest
+    - RABBITMQ_DEFAULT_PASS=guest  
+  ports:
+    - "5672:5672"
+    - "15672:15672"
+microservice:
+  build: .
+  command: python main.py
+  links:
+    - rabbitmq
+  ports:
+    - "5000:5000"
+  volumes:
+    - .:/app
+celery:
+  build: .
+  command: celery multi start affiliation bibliography legal legal-tr -A celery_init --loglevel=debug -Q:affiliation affiliation -c:affiliation 2 -Q:bibliography bibliography -c:bibliography 2 -Q:legal legal -c:legal 2 -Q:legal-tr legal-tr -c:legal-tr 2 --pidfile=/var/log/celery/%n.pid --logfile=/var/log/celery/%n%I.log
+  environment:
+    C_FORCE_ROOT: "True"
+  links:
+    - rabbitmq
+  volumes:
+    - .:/app
+#uwsgi:
+#  build: .
+#  command: uwsgi --ini /etc/uwsgi/uwsgi.ini
+#  links:
+#    - celery
+#    - nginx
+#    - rabbitmq
+#    - microservice
+#  ports:
+#    - 
+#  volumes:
+#    - .:/app
+#nginx:
+#  build: .
+#  command: /usr/sbin/nginx
+#  links:
+#    - microservice
+#  ports:
+#    - "80:80"
+#    - "443:433"
+#  volumes:
+#    - .:/app
